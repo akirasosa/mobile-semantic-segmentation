@@ -18,7 +18,7 @@ The goal of this project is to detect hair segments with reasonable accuracy and
 
 ## About Model
 
-At this time, there is only one model in this repository, [MobileUNet.py](nets/MobileUNet.py). As a typical U-Net architecture, it has encoder and decoder parts, which are consists of depthwise conv block proposed in MobileNet.
+At this time, there is only one model in this repository, [MobileUNet.py](nets/MobileUNet.py). As a typical U-Net architecture, it has encoder and decoder parts, which are consists of depthwise conv blocks proposed in MobileNet.
 
 Input image is encoded to 1/32 size, and then decoded to 1/2. Finally, it scores the results and make it to original size.
 
@@ -61,7 +61,7 @@ python train_full.py \
 
 Dice coefficient is used as a loss function. Some other metrics are used such as precision, recall and binary cross entropy. Loss can be decreased soon smoothly even with high learning rate.
 
-I also tried adding aux loss by using the segment of face part. Though, still I have not fully evaluated the effect of it, there maybe a little improvement of accuracy *without dropping inference speed*.
+I also tried adding aux loss by using the segment of face part. Though, still I have not fully examined the effect of it, there maybe a little improvement of accuracy **without dropping inference speed**.
 
 
 ## Converting
