@@ -71,7 +71,7 @@ As the purpose of this project is to make model run in mobile device, this repos
 * [coreml-converter.py](coreml-converter.py)
   * It converts trained hdf5 model to CoreML model for iOS app.
 * [coreml-converter-bench.py](coreml-converter-bench.py)
-  * It generates no-trained CoreML model. It's useful to measure the inference speed in iOS device.
+  * It generates non-trained CoreML model. It's useful to measure the inference speed in iOS device.
 * [tf-converter.py](tf-converter.py)
   * It converts trained hdf5 model to protocol buffer format for TensorFlow which is used in Android app.
 
