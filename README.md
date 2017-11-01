@@ -66,7 +66,7 @@ I also tried adding aux loss by using the segment of face part. Though, still I 
 
 ## Converting
 
-As the purpose of this project is to make model model run in mobile device, this repository contains some scripts to convert models for iOS and Android.
+As the purpose of this project is to make model run in mobile device, this repository contains some scripts to convert models for iOS and Android.
 
 * [coreml-converter.py](coreml-converter.py)
   * It converts trained hdf5 model to CoreML model for iOS app.
