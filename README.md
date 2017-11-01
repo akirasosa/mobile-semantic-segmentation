@@ -22,7 +22,7 @@ At this time, there is only one model in this repository, [MobileUNet.py](nets/M
 
 Input image is encoded to 1/32 size, and then decoded to 1/2. Finally, it scores the results and make it to original size.
 
-Beside the U-Net like model, PSPNet like model was also tried. But it did not make a good result. Probably, global context does not have so much importance in the problem of hair recognition.
+Beside the U-Net like model, [PSPNet](https://arxiv.org/abs/1612.01105) like model was also tried. But it did not make a good result. Probably, global context does not have so much importance in the problem of hair recognition.
 
 ## Steps to training
 
