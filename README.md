@@ -50,7 +50,7 @@ Data augmentation will be done on the fly during training phase. I used rotation
 
 ### Training
 
-This repository contains three kinds of training scripts, transfer learning, fine tuning and full training. MobileNet is so compact that it's possible to try full training many times.
+This repository contains three kinds of training scripts, transfer learning, fine tuning and full training. MobileNet is so compact that it's possible to try full training in a short time.
 
 ```
 # Full training
