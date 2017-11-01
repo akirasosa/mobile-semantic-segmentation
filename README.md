@@ -45,7 +45,7 @@ Then, convert it to numpy binary format for portability.
 python data.py --image_size=128
 ```
 
-Data augmentation will be done on the fly with training phase. I used rotation, shear ,zoom and horizontal flip. 
+Data augmentation will be done on the fly during training phase. I used rotation, shear ,zoom and horizontal flip. 
 
 
 ### Training
@@ -66,14 +66,14 @@ I also tried adding aux loss by using the segment of face part. Though, still I 
 
 ## Converting
 
-As the purpose of this project is running model in mobile device, this repository contains some scripts to convert models for iOS and Android.
+As the purpose of this project is to make model model run in mobile device, this repository contains some scripts to convert models for iOS and Android.
 
 * [coreml-converter.py](coreml-converter.py)
   * It converts trained hdf5 model to CoreML model for iOS app.
 * [coreml-converter-bench.py](coreml-converter-bench.py)
   * It generates no-trained CoreML model. It's useful to measure the inference speed in iOS device.
 * [tf-converter.py](tf-converter.py)
-  * It converts trained hdf5 model to protocol buffer file for TensorFlow which is used in Android app.
+  * It converts trained hdf5 model to protocol buffer format for TensorFlow which is used in Android app.
 
 
 ## TBD
