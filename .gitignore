@@ -1,0 +1,6 @@
+*.pyc
+.idea
+data/*
+artifacts/*
+logs/*
+!.keep
