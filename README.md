@@ -6,7 +6,7 @@ The architecture is inspired by [MobileNets](https://arxiv.org/abs/1704.04861) a
 
 [LFW, Labeled Faces in the Wild](http://vis-www.cs.umass.edu/lfw/part_labels/), is used as a Dataset.
 
-The goal of this project is to detect hair segments with reasonable accuracy and speed in mobile device. Currently, it achieves 0.88 IoU. The speed of inference will be reported later.
+The goal of this project is to detect hair segments with reasonable **accuracy and speed in mobile device**. Currently, it achieves 0.88 IoU. The speed of inference will be reported later.
 
 ![Example of predicted image.](assets/prediction.png)
 
