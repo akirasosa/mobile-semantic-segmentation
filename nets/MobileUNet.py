@@ -204,7 +204,7 @@ def MobileUNet(input_shape=None,
     # b18 = _conv_block(up5, filters, alpha_up, block_id=18)
 
     x = Conv2D(1, (1, 1), kernel_initializer='he_normal', activation='linear')(b18)
-    x = BilinearUpSampling2D(size=(2,2))(x)
+    x = BilinearUpSampling2D(size=(2, 2))(x)
     x = Activation('sigmoid')(x)
 
     model = Model(img_input, x)
