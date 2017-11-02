@@ -18,7 +18,7 @@ The goal of this project is to detect hair segments with reasonable **accuracy a
 
 ## About Model
 
-At this time, there is only one model in this repository, [MobileUNet.py](nets/MobileUNet.py). As a typical U-Net architecture, it has encoder and decoder parts, which are consists of depthwise conv blocks proposed by MobileNet.
+At this time, there is only one model in this repository, [MobileUNet.py](nets/MobileUNet.py). As a typical U-Net architecture, it has encoder and decoder parts, which consist of depthwise conv blocks proposed by MobileNet.
 
 Input image is encoded to 1/32 size, and then decoded to 1/2. Finally, it scores the results and make it to original size.
 
