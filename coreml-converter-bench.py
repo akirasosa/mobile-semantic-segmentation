@@ -1,3 +1,5 @@
+from itertools import product
+
 import coremltools
 from keras import Input
 from keras.utils import CustomObjectScope
@@ -30,22 +32,18 @@ def main():
     """
     hack_coremltools()
 
-    shape128 = (128, 128, 3)
-    shape224 = (224, 224, 3)
+    sizes = [224, 192, 160, 128]
+    alphas = [1., .75, .50, .25]
 
     experiments = [
         {
-            'name': 'mobile_unet_128_1_025',
-            'model': MobileUNet(input_shape=shape128,
-                                input_tensor=Input(shape=shape128),
-                                alpha_up=0.25)
-        },
-        {
-            'name': 'mobile_unet_224_1_025',
-            'model': MobileUNet(input_shape=shape224,
-                                input_tensor=Input(shape=shape224),
-                                alpha_up=0.25)
-        },
+            'name': 'mobile_unet_{}_{}_1'.format(s, a),
+            'model': MobileUNet(input_shape=(s, s, 3),
+                                input_tensor=Input(shape=(s, s, 3)),
+                                alpha=a,
+                                alpha_up=a)
+        }
+        for s, a in product(sizes, alphas)
     ]
 
     for e in experiments:
