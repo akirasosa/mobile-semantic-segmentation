@@ -27,17 +27,18 @@ from nets.MobileUNet import MobileUNet, custom_objects
 def main():
     """
     Generate CoreML model for benchmark by using non-trained model.
-    It's useful if you just want to measure the speed of inference
+    It's useful if you just want to measure the inference speed
     of your model
     """
     hack_coremltools()
 
     sizes = [224, 192, 160, 128]
     alphas = [1., .75, .50, .25]
+    name_fmt = 'mobile_unet_{0:}_{1:03.0f}_{2:03.0f}'
 
     experiments = [
         {
-            'name': 'mobile_unet_{}_{}_1'.format(s, a),
+            'name': name_fmt.format(s, a * 100, a * 100).replace('.', '_'),
             'model': MobileUNet(input_shape=(s, s, 3),
                                 input_tensor=Input(shape=(s, s, 3)),
                                 alpha=a,
