@@ -200,8 +200,8 @@ def MobileUNet(input_shape=None,
 
     filters = int(32 * alpha)
     up5 = concatenate([b17, b00], axis=3)
-    b18 = _depthwise_conv_block(up5, filters, alpha_up, depth_multiplier, block_id=18)
-    # b18 = _conv_block(up5, filters, alpha_up, block_id=18)
+    # b18 = _depthwise_conv_block(up5, filters, alpha_up, depth_multiplier, block_id=18)
+    b18 = _conv_block(up5, filters, alpha_up, block_id=18)
 
     x = Conv2D(1, (1, 1), kernel_initializer='he_normal', activation='linear')(b18)
     x = BilinearUpSampling2D(size=(2, 2))(x)
