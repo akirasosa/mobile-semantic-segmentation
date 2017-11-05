@@ -5,18 +5,17 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 from keras.models import load_model
-from keras.preprocessing.image import ImageDataGenerator
 from keras.utils import CustomObjectScope
 from sklearn.model_selection import train_test_split
 
-from data import seed
+from data import seed, standardize
 from loss import np_dice_coef
 from nets.MobileUNet import custom_objects
 
-SAVED_MODEL1 = 'artifacts/128_1_025.h5'
-SAVED_MODEL2 = 'artifacts/128_075_025.h5'
+SAVED_MODEL1 = 'artifacts/224_1_1.h5'
+SAVED_MODEL2 = 'artifacts/224_1_1.h5'
 
-size = 128
+size = 224
 
 
 def main():
@@ -24,14 +23,10 @@ def main():
         model1 = load_model(SAVED_MODEL1)
         model2 = load_model(SAVED_MODEL2)
 
-    images = np.load('data/images-128.npy')
-    masks = np.load('data/masks-128.npy')
+    images = np.load('data/images-224.npy')
+    masks = np.load('data/masks-224.npy')
     # only hair
     masks = masks[:, :, :, 0].reshape(-1, size, size)
-
-    image_datagen = ImageDataGenerator(featurewise_center=True,
-                                       featurewise_std_normalization=True)
-    image_datagen.fit(images)
 
     _, images, _, masks = train_test_split(images,
                                            masks,
@@ -43,13 +38,12 @@ def main():
         batched2 = img.reshape(1, size, size, 3).astype(float)
 
         t1 = time.time()
-        # pred1 = model1.predict(batched / 255).reshape(size, size)
-        pred1 = model1.predict(image_datagen.standardize(batched1)).reshape(size, size)
+        pred1 = model1.predict(standardize(batched1)).reshape(size, size)
         elapsed = time.time() - t1
         print('elapsed1: ', elapsed)
 
         t1 = time.time()
-        pred2 = model2.predict(image_datagen.standardize(batched2)).reshape(size, size)
+        pred2 = model2.predict(standardize(batched2)).reshape(size, size)
         elapsed = time.time() - t1
         print('elapsed2: ', elapsed)
 

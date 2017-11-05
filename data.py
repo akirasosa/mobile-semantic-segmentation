@@ -11,10 +11,23 @@ from sklearn.model_selection import train_test_split
 seed = 1
 
 
+def standardize(images, mean=None, std=None):
+    if mean is None:
+        # They are available from all images.
+        mean = [[[29.24429131, 29.24429131, 29.24429131]]]
+    if std is None:
+        # They are available from all images.
+        std = [[[69.8833313, 63.37436676, 61.38568878]]]
+    x = (images - np.array(mean)) / (np.array(std) + 1e-7)
+    return x
+
+
 def _create_datagen(images, masks, img_gen, mask_gen):
     img_iter = img_gen.flow(images, seed=seed)
     # only hair
-    mask_iter = mask_gen.flow(np.expand_dims(masks[:, :, :, 0], axis=4), seed=seed)
+    mask_iter = mask_gen.flow(np.expand_dims(masks[:, :, :, 0], axis=4),
+                              # use same seed to apply same augmentation with image
+                              seed=seed)
 
     def datagen():
         while True:
@@ -44,6 +57,7 @@ def load_data(img_file, mask_file):
         # vertical_flip=True,  # debug
         horizontal_flip=True,
     )
+    train_img_gen.fit(images)
     train_mask_gen = ImageDataGenerator(
         rescale=1. / 255,
         rotation_range=20,
@@ -52,7 +66,6 @@ def load_data(img_file, mask_file):
         # vertical_flip=True,  # debug
         horizontal_flip=True,
     )
-    train_img_gen.fit(images)  # fit with entire images
     train_gen = _create_datagen(X_train, Y_train,
                                 img_gen=train_img_gen,
                                 mask_gen=train_mask_gen)
@@ -140,7 +153,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--img_size',
         type=int,
-        default=128,
+        default=192,
     )
     args, _ = parser.parse_known_args()
 
