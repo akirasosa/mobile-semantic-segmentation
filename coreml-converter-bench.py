@@ -38,7 +38,7 @@ def main():
 
     experiments = [
         {
-            'name': name_fmt.format(s, a * 100, a * 100).replace('.', '_'),
+            'name': name_fmt.format(s, a * 100, a * 100),
             'model': MobileUNet(input_shape=(s, s, 3),
                                 input_tensor=Input(shape=(s, s, 3)),
                                 alpha=a,
