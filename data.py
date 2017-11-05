@@ -13,10 +13,10 @@ seed = 1
 
 def standardize(images, mean=None, std=None):
     if mean is None:
-        # They are available from all images.
+        # These values are available from all images.
         mean = [[[29.24429131, 29.24429131, 29.24429131]]]
     if std is None:
-        # They are available from all images.
+        # These values are available from all images.
         std = [[[69.8833313, 63.37436676, 61.38568878]]]
     x = (images - np.array(mean)) / (np.array(std) + 1e-7)
     return x

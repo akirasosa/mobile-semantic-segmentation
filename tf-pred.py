@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 
+from data import standardize
+
 prefix = 'hair_recognition'
 
 
@@ -27,15 +29,19 @@ def main(pb_file, img_file):
     x = graph.get_tensor_by_name('%s/input_1:0' % prefix)
     y = graph.get_tensor_by_name('%s/output_0:0' % prefix)
 
-    with tf.Session(graph=graph) as sess:
-        images = np.load(img_file).astype(float)
-        images /= 255
+    images = np.load(img_file).astype(float)
+    img_h = images.shape[1]
+    img_w = images.shape[2]
 
+    with tf.Session(graph=graph) as sess:
         for img in images:
+            batched = img.reshape(-1, img_h, img_w, 3)
+            normalized = standardize(batched)
+
             pred = sess.run(y, feed_dict={
-                x: img.reshape(-1, 128, 128, 3)
+                x: normalized
             })
-            plt.imshow(pred.reshape(128, 128))
+            plt.imshow(pred.reshape(img_h, img_w))
             plt.show()
 
 
@@ -44,12 +50,12 @@ if __name__ == '__main__':
     parser.add_argument(
         '--pb_file',
         type=str,
-        default='artifacts/025-128-adam.pb',
+        default='artifacts/224_1_1.pb',
     )
     parser.add_argument(
         '--img_file',
         type=str,
-        default='data/images-128.npy',
+        default='data/images-224.npy',
         help='image file as numpy format'
     )
     args, _ = parser.parse_known_args()
