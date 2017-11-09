@@ -6,7 +6,9 @@ The architecture is inspired by [MobileNets](https://arxiv.org/abs/1704.04861) a
 
 [LFW, Labeled Faces in the Wild](http://vis-www.cs.umass.edu/lfw/part_labels/), is used as a Dataset.
 
-The goal of this project is to detect hair segments with reasonable **accuracy and speed in mobile device**. Currently, it achieves 0.88 IoU. The inference speed will be reported later.
+The goal of this project is to detect hair segments with reasonable **accuracy and speed in mobile device**. Currently, it achieves 0.89 IoU.
+
+About speed vs accuracy, more details are available at [my post](https://medium.com/vitalify-asia/real-time-deep-learning-in-mobile-application-25cf601a8976).
 
 ![Example of predicted image.](assets/prediction.png)
 
@@ -18,7 +20,7 @@ The goal of this project is to detect hair segments with reasonable **accuracy a
 
 ## About Model
 
-At this time, there is only one model in this repository, [MobileUNet.py](nets/MobileUNet.py). As a typical U-Net architecture, it has encoder and decoder parts, which consist of depthwise conv blocks proposed by MobileNet.
+At this time, there is only one model in this repository, [MobileUNet.py](nets/MobileUNet.py). As a typical U-Net architecture, it has encoder and decoder parts, which consist of depthwise conv blocks proposed by MobileNets.
 
 Input image is encoded to 1/32 size, and then decoded to 1/2. Finally, it scores the results and make it to original size.
 
@@ -50,7 +52,7 @@ Data augmentation will be done on the fly during training phase. I used rotation
 
 ### Training
 
-This repository contains three kinds of training scripts, transfer learning, fine tuning and full training. MobileNet is so compact that it's possible to try full training in a short time.
+This repository contains three kinds of training scripts, transfer learning, fine tuning and full training. MobileNets is so compact that it's possible to try full training in a short time.
 
 ```
 # Full training
@@ -78,7 +80,7 @@ As the purpose of this project is to make model run in mobile device, this repos
 
 ## TBD
 
-- [ ] Report speed vs accuracy in mobile device.
+- [x] Report speed vs accuracy in mobile device.
 - [ ] Aux loss
 - [ ] Some more optimizations??
 
