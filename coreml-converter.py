@@ -21,7 +21,14 @@ def main(input_model_path):
 
     with CustomObjectScope(custom_objects()):
         model = load_model(input_model_path)
-        coreml_model = coremltools.converters.keras.convert(model, input_names='data')
+        # https://github.com/akirasosa/mobile-semantic-segmentation/issues/6#issuecomment-344508193
+        coreml_model = coremltools.converters.keras.convert(model,
+                                                            input_names='image',
+                                                            image_input_names='image',
+                                                            red_bias=29.24429131 / 64.881128947,
+                                                            green_bias=29.24429131 / 64.881128947,
+                                                            blue_bias=29.24429131 / 64.881128947,
+                                                            image_scale=1. / 64.881128947)
     coreml_model.save(out_path)
 
     print('CoreML model is created at %s' % out_path)
