@@ -44,7 +44,7 @@ data/
 
 Then, convert it to numpy binary format for portability.
 ```
-python data.py --image_size=128
+python data.py --img_size=128
 ```
 
 Data augmentation will be done on the fly during training phase. I used rotation, shear ,zoom and horizontal flip. 
