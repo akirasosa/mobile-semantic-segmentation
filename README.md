@@ -12,6 +12,11 @@ About speed vs accuracy, more details are available at [my post](https://medium.
 
 ![Example of predicted image.](assets/prediction.png)
 
+## Example application
+
+* [iOS](https://github.com/vfa-tranhv/MobileAILab-HairColor-iOS)
+* Android (TODO)
+
 ## Requirements
 
 * Keras 2
@@ -81,6 +86,7 @@ As the purpose of this project is to make model run in mobile device, this repos
 ## TBD
 
 - [x] Report speed vs accuracy in mobile device.
+- [ ] Example app for Android
 - [ ] Aux loss
 - [ ] Some more optimizations??
 
