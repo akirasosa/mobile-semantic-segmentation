@@ -35,7 +35,7 @@ Beside the U-Net like model, [PSPNet](https://arxiv.org/abs/1612.01105) like mod
 
 ### Data Preparation
 
-Data is available at LFW. About the mask images, refer https://github.com/akirasosa/mobile-semantic-segmentation/issues/11. After you got images and masks, put the images of faces and masks as shown below.
+Data is available at LFW. About the mask images, refer [#11](../../issues/11) . After you got images and masks, put the images of faces and masks as shown below.
 ```
 data/
   raw/
