@@ -106,8 +106,8 @@ def create_data(data_dir, out_dir, img_size):
     :param img_size:
     :return:
     """
-    img_files = glob(data_dir + '/images/*.jpg')
-    mask_files = glob(data_dir + '/masks/*.ppm')
+    img_files = sorted(glob(data_dir + '/images/*.jpg'))
+    mask_files = sorted(glob(data_dir + '/masks/*.ppm'))
     X = []
     Y = []
     for img_path, mask_path in zip(img_files, mask_files):
