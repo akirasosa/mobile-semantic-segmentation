@@ -5,7 +5,7 @@ from nets.MobileNetV2_unet import MobileNetV2_unet
 
 
 def _init_unet(state_dict):
-    unet = MobileNetV2_unet(pretrained=None)
+    unet = MobileNetV2_unet(pre_trained=None)
     unet.load_state_dict(state_dict)
     return unet
 

@@ -1,3 +1,4 @@
+import argparse
 import logging
 import os
 
@@ -34,17 +35,17 @@ OUT_DIR = 'outputs/{}'.format(EXPERIMENT)
 
 
 # %%
-def get_data_loaders(train_files, val_files):
+def get_data_loaders(train_files, val_files, img_size=224):
     train_transform = Compose([
         ColorJitter(0.3, 0.3, 0.3, 0.3),
-        RandomResizedCrop(IMG_SIZE, scale=(0.8, 1.2)),
+        RandomResizedCrop(img_size, scale=(0.8, 1.2)),
         RandomAffine(10.),
         RandomRotation(13.),
         RandomHorizontalFlip(),
         ToTensor(),
     ])
     val_transform = Compose([
-        Resize((IMG_SIZE, IMG_SIZE)),
+        Resize((img_size, img_size)),
         ToTensor(),
     ])
 
@@ -85,7 +86,7 @@ def log_hist(df_hist):
     logger.debug('')
 
 
-def run_cv():
+def run_cv(img_size, pre_trained):
     image_files = get_img_files()
     kf = KFold(n_splits=N_CV, random_state=RANDOM_STATE, shuffle=True)
 
@@ -103,10 +104,10 @@ def run_cv():
             log_hist(df_hist)
 
         criterion = dice_loss(scale=2)
-        data_loaders = get_data_loaders(train_files, val_files)
+        data_loaders = get_data_loaders(train_files, val_files, img_size)
         trainer = Trainer(data_loaders, criterion, device, on_after_epoch)
 
-        model = MobileNetV2_unet()
+        model = MobileNetV2_unet(pre_trained=pre_trained)
         model.to(device)
         optimizer = Adam(model.parameters(), lr=LR)
 
@@ -127,4 +128,19 @@ if __name__ == '__main__':
     if not logger.hasHandlers():
         logger.addHandler(logging.FileHandler(filename="outputs/{}.log".format(EXPERIMENT)))
 
-    run_cv()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--img_size',
+        type=int,
+        default=224,
+        help='image size',
+    )
+    parser.add_argument(
+        '--pre_trained',
+        type=str,
+        help='path of pre trained weight',
+    )
+    args, _ = parser.parse_known_args()
+    print(args)
+    # run_cv(**vars(args))
+

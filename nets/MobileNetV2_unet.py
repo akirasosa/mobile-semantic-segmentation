@@ -9,7 +9,7 @@ from nets.MobileNetV2 import MobileNetV2, InvertedResidual
 
 
 class MobileNetV2_unet(nn.Module):
-    def __init__(self, pretrained='weights/mobilenet_v2.pth.tar'):
+    def __init__(self, pre_trained='weights/mobilenet_v2.pth.tar'):
         super(MobileNetV2_unet, self).__init__()
 
         self.backbone = MobileNetV2()
@@ -32,8 +32,8 @@ class MobileNetV2_unet(nn.Module):
 
         self._init_weights()
 
-        if pretrained is not None:
-            self.backbone.load_state_dict(torch.load(pretrained))
+        if pre_trained is not None:
+            self.backbone.load_state_dict(torch.load(pre_trained))
 
     def forward(self, x):
         for n in range(0, 2):
@@ -120,5 +120,5 @@ class MobileNetV2_unet(nn.Module):
 if __name__ == '__main__':
     # Debug
     logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-    net = MobileNetV2_unet(pretrained=None)
+    net = MobileNetV2_unet(pre_trained=None)
     net(torch.randn(1, 3, 224, 224))
