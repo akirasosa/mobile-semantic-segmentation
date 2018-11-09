@@ -17,7 +17,7 @@ def _mask_to_img(mask_file):
 
 
 def _img_to_mask(img_file):
-    mask_file = re.sub('^{}/masks'.format(IMG_DIR), '{}/images'.format(IMG_DIR), img_file)
+    mask_file = re.sub('^{}/images'.format(IMG_DIR), '{}/masks'.format(IMG_DIR), img_file)
     mask_file = re.sub('\.jpg$', '.ppm', mask_file)
     return mask_file
 
