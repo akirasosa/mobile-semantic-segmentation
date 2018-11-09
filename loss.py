@@ -1,47 +1,19 @@
-import numpy as np
-from keras import backend as K
-
-smooth = 1e-5
+from torch.nn.functional import interpolate
 
 
-def precision(y_true, y_pred):
-    y_true_f = K.flatten(y_true)
-    y_pred_f = K.flatten(y_pred)
+def dice_loss(scale=None):
+    def fn(input, target):
+        smooth = 1.
 
-    true_positives = K.sum(K.round(K.clip(y_true_f * y_pred_f, 0, 1)))
-    predicted_positives = K.sum(K.round(K.clip(y_pred_f, 0, 1)))
+        if scale is not None:
+            scaled = interpolate(input, scale_factor=scale, mode='bilinear', align_corners=False)
+            iflat = scaled.view(-1)
+        else:
+            iflat = input.view(-1)
 
-    return true_positives / (predicted_positives + K.epsilon())
+        tflat = target.view(-1)
+        intersection = (iflat * tflat).sum()
 
+        return 1 - ((2. * intersection + smooth) / (iflat.sum() + tflat.sum() + smooth))
 
-def recall(y_true, y_pred):
-    y_true_f = K.flatten(y_true)
-    y_pred_f = K.flatten(y_pred)
-
-    true_positives = K.sum(K.round(K.clip(y_true_f * y_pred_f, 0, 1)))
-    possible_positives = K.sum(K.round(K.clip(y_true_f, 0, 1)))
-
-    return true_positives / (possible_positives + K.epsilon())
-
-
-def f1_score(y_true, y_pred):
-    return 2. / (1. / recall(y_true, y_pred) + 1. / precision(y_true, y_pred))
-
-
-def dice_coef(y_true, y_pred):
-    y_true_f = K.flatten(y_true)
-    y_pred_f = K.flatten(y_pred)
-    intersection = K.sum(y_true_f * y_pred_f)
-
-    return (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
-
-
-def dice_coef_loss(y_true, y_pred):
-    return -dice_coef(y_true, y_pred)
-
-
-def np_dice_coef(y_true, y_pred):
-    tr = y_true.flatten()
-    pr = y_pred.flatten()
-
-    return (2. * np.sum(tr * pr) + smooth) / (np.sum(tr) + np.sum(pr) + smooth)
+    return fn
