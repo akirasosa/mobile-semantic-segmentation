@@ -3,6 +3,7 @@ import re
 from glob import glob
 
 import cv2
+import numpy as np
 from PIL import Image
 from torch.utils.data import Dataset
 
@@ -23,7 +24,7 @@ def _img_to_mask(img_file):
 
 def get_img_files():
     mask_files = sorted(glob('{}/masks/*.ppm'.format(IMG_DIR)))
-    return [_mask_to_img(f) for f in mask_files]
+    return np.array([_mask_to_img(f) for f in mask_files])
 
 
 class MaskDataset(Dataset):
