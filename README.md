@@ -2,7 +2,7 @@
 
 This project is an example project of semantic segmentation for mobile real-time app.
 
-The architecture is inspired by [MobileNets](https://arxiv.org/abs/1704.04861) and [U-Net](https://arxiv.org/abs/1505.04597).
+The architecture is inspired by [MobileNetV2](https://arxiv.org/abs/1801.04381) and [U-Net](https://arxiv.org/abs/1505.04597).
 
 [LFW, Labeled Faces in the Wild](http://vis-www.cs.umass.edu/lfw/part_labels/), is used as a Dataset.
 
@@ -19,17 +19,14 @@ About speed vs accuracy, more details are available at [my post](https://medium.
 
 ## Requirements
 
-* Keras 2
-* TensorFlow as a backend of Keras and for Android app.
+* PyTorch 0.4
 * CoreML for iOS app.
 
 ## About Model
 
-At this time, there is only one model in this repository, [MobileUNet.py](nets/MobileUNet.py). As a typical U-Net architecture, it has encoder and decoder parts, which consist of depthwise conv blocks proposed by MobileNets.
+At this time, there is only one model in this repository, [MobileUNet.py](nets/MobileNetV2_unet.py). As a typical U-Net architecture, it has encoder and decoder parts, which consist of depthwise conv blocks proposed by MobileNets.
 
 Input image is encoded to 1/32 size, and then decoded to 1/2. Finally, it scores the results and make it to original size.
-
-Beside the U-Net like model, [PSPNet](https://arxiv.org/abs/1612.01105) like model was also tried. But it did not make a good result. Probably, global context does not have so much importance in the problem of hair recognition.
 
 ## Steps to training
 
@@ -47,47 +44,35 @@ data/
       0002.ppm
 ```
 
-Then, convert it to numpy binary format for portability.
-```
-python data.py --img_size=128
-```
-
-Data augmentation will be done on the fly during training phase. I used rotation, shear ,zoom and horizontal flip. 
-
-
 ### Training
 
-This repository contains three kinds of training scripts, transfer learning, fine tuning and full training. MobileNets is so compact that it's possible to try full training in a short time.
+If you use 224 x 224 as input size, pre-trained weight of MobileNetV2 is available. Download it from [A PyTorch implementation of MobileNetV2](https://github.com/tonylins/pytorch-mobilenet-v2) and put weight file under ```weights``` directory.
 
 ```
-# Full training
-python train_full.py \
-  --img_file=/path/to/images.npy \
-  --mask_file=/path/to/masks.npy
+python train_unet.py \
+  --img_size=224 \
+  --pre_trained='weights/mobilenet_v2.pth.tar'
 ```
 
-Dice coefficient is used as a loss function. Some other metrics are used such as precision, recall and binary cross entropy. Loss can be decreased soon smoothly even with high learning rate.
+If you use other input sizes, the model will be trained from scratch.
 
-I also tried adding aux loss by using the segment of face part. Though, still I have not fully examined the effect of it, there maybe a little improvement of accuracy **without dropping inference speed**.
+```
+python train_unet.py --img_size=192
+```
+
+Dice coefficient is used as a loss function.
 
 
 ## Converting
 
 As the purpose of this project is to make model run in mobile device, this repository contains some scripts to convert models for iOS and Android.
 
-* [coreml-converter.py](coreml-converter.py)
-  * It converts trained hdf5 model to CoreML model for iOS app.
-* [coreml-converter-bench.py](coreml-converter-bench.py)
-  * It generates non-trained CoreML model. It's useful to measure the inference speed in iOS device.
-* [tf-converter.py](tf-converter.py)
-  * It converts trained hdf5 model to protocol buffer format for TensorFlow which is used in Android app.
-
+* [coreml_converter.py](coreml_converter.py)
+  * It converts trained PyTorch model into CoreML model for iOS app.
 
 ## TBD
 
 - [x] Report speed vs accuracy in mobile device.
-- [ ] Example app for Android
-- [ ] Aux loss
-- [ ] Some more optimizations??
+- [ ] Convert pytorch to Android using TesorFlow Light
 
 
