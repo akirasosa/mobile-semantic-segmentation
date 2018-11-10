@@ -62,6 +62,11 @@ python train_unet.py --img_size=192
 
 Dice coefficient is used as a loss function.
 
+## Pretrained model
+
+|Input size|IoU|Download|
+|----|----|---|
+|224|0.89|[Google Drive](https://drive.google.com/file/d/11qBqH79RqCaibuACzZD_b9yIY9fwJinJ/view?usp=sharing)|
 
 ## Converting
 
