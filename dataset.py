@@ -28,11 +28,14 @@ def get_img_files():
 
 
 class MaskDataset(Dataset):
-    def __init__(self, img_files, transform, mask_transform, mask_axis=0):
+    def __init__(self, img_files, transform, mask_transform=None, mask_axis=0):
         self.img_files = img_files
         self.mask_files = [_img_to_mask(f) for f in img_files]
         self.transform = transform
-        self.mask_transform = mask_transform
+        if mask_transform is None:
+            self.mask_transform = transform
+        else:
+            self.mask_transform = mask_transform
         self.mask_axis = mask_axis
 
     def __getitem__(self, idx):
