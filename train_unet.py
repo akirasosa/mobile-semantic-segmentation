@@ -44,12 +44,19 @@ def get_data_loaders(train_files, val_files, img_size=224):
         RandomHorizontalFlip(),
         ToTensor(),
     ])
+    train_mask_transform = Compose([
+        RandomResizedCrop(img_size, scale=(0.8, 1.2)),
+        RandomAffine(10.),
+        RandomRotation(13.),
+        RandomHorizontalFlip(),
+        ToTensor(),
+    ])
     val_transform = Compose([
         Resize((img_size, img_size)),
         ToTensor(),
     ])
 
-    train_loader = DataLoader(MaskDataset(train_files, train_transform),
+    train_loader = DataLoader(MaskDataset(train_files, train_transform, train_mask_transform),
                               batch_size=BATCH_SIZE,
                               shuffle=True,
                               pin_memory=True,
