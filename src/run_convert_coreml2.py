@@ -1,0 +1,29 @@
+import coremltools as ct
+import torch
+
+from mobile_seg.const import TMP_DIR, EXP_DIR
+from mobile_seg.modules.net import load_trained_model
+from mobile_seg.modules.wrapper import Wrapper
+
+# %%
+IMG_SIZE = 224
+
+TMP_ONNX = TMP_DIR / 'tmp.onnx'
+CKPT_PATH = EXP_DIR / 'mobile_seg/1596704750/checkpoints/epoch=194.ckpt'
+
+# %%
+unet = load_trained_model(CKPT_PATH)
+model = Wrapper(unet=unet).eval()
+
+# %%
+inputs = torch.randn(1, 3, IMG_SIZE, IMG_SIZE)
+traced_model = torch.jit.trace(model, inputs)
+
+# %%
+# Convert to Core ML using the Unified Conversion API
+# TODO 2020/08/06, It does not work, because coremltools does not support PyTorch 1.6 yet.
+# See https://github.com/apple/coremltools/issues/827
+model = ct.convert(
+    traced_model,
+    inputs=[ct.ImageType(name="input_1", shape=inputs.shape)],
+)

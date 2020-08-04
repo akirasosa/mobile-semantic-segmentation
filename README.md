@@ -19,12 +19,12 @@ About speed vs accuracy, more details are available at [my post](https://medium.
 
 ## Requirements
 
-* PyTorch 0.4
+* PyTorch 1.6 
 * CoreML for iOS app.
 
 ## About Model
 
-At this time, there is only one model in this repository, [MobileUNet.py](nets/MobileNetV2_unet.py). As a typical U-Net architecture, it has encoder and decoder parts, which consist of depthwise conv blocks proposed by MobileNets.
+At this time, there is only one model in this repository, [MobileNetV2_unet](./src/mobile_seg/modules/net.py). As a typical U-Net architecture, it has encoder and decoder parts, which consist of depthwise conv blocks proposed by MobileNets.
 
 Input image is encoded to 1/32 size, and then decoded to 1/2. Finally, it scores the results and make it to original size.
 
@@ -35,13 +35,14 @@ Input image is encoded to 1/32 size, and then decoded to 1/2. Finally, it scores
 Data is available at LFW. To get mask images, refer [issue #11](../../issues/11) for more. After you got images and masks, put the images of faces and masks as shown below.
 ```
 data/
-  raw/
-    images/
-      0001.jpg
-      0002.jpg
-    masks/
-      0001.ppm
-      0002.ppm
+  lfw/
+    raw/
+      images/
+        0001.jpg
+        0002.jpg
+      masks/
+        0001.ppm
+        0002.ppm
 ```
 
 ### Training
