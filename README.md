@@ -47,18 +47,11 @@ data/
 
 ### Training
 
-If you use 224 x 224 as input size, pre-trained weight of MobileNetV2 is available. Download it from [A PyTorch implementation of MobileNetV2](https://github.com/tonylins/pytorch-mobilenet-v2) and put weight file under ```weights``` directory.
+If you use 224 x 224 as input size, pre-trained weight of MobileNetV2 is available. It will be automatically downloaded when you train model with the following command.
 
 ```
-python train_unet.py \
-  --img_size=224 \
-  --pre_trained='weights/mobilenet_v2.pth.tar'
-```
-
-If you use other input sizes, the model will be trained from scratch.
-
-```
-python train_unet.py --img_size=192
+cd src
+python run_train.py params/001.yaml
 ```
 
 Dice coefficient is used as a loss function.
@@ -73,7 +66,7 @@ Dice coefficient is used as a loss function.
 
 As the purpose of this project is to make model run in mobile device, this repository contains some scripts to convert models for iOS and Android.
 
-* [coreml_converter.py](coreml_converter.py)
+* [run_convert_coreml.py](src/run_convert_coreml.py)
   * It converts trained PyTorch model into CoreML model for iOS app.
 
 ## TBD
