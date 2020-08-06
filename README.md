@@ -19,7 +19,8 @@ About speed vs accuracy, more details are available at [my post](https://medium.
 
 ## Requirements
 
-* PyTorch 1.6 
+* Python 3.8
+* [requirements.txt](./requirements.txt)
 * CoreML for iOS app.
 
 ## About Model
