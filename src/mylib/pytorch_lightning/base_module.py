@@ -14,7 +14,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torch_optimizer import RAdam
 
 from mylib.torch.optim.sched import flat_cos
-from mylib.torch.tools.ema.utils import update_ema
+from mylib.torch.ensemble.ema import update_ema
 
 T = TypeVar('T')
 

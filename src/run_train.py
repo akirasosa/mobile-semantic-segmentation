@@ -1,4 +1,3 @@
-import copy
 import dataclasses
 from functools import cached_property
 from logging import getLogger, FileHandler
@@ -24,6 +23,7 @@ from mobile_seg.modules.net import MobileNetV2_unet
 from mobile_seg.params import ModuleParams, Params
 from mylib.albumentations.augmentations.transforms import MyCoarseDropout
 from mylib.pytorch_lightning.base_module import PLBaseModule
+from mylib.torch.ensemble.ema import create_ema
 
 
 @dataclasses.dataclass(frozen=True)
@@ -41,11 +41,8 @@ class PLModule(PLBaseModule):
             drop_path_rate=self.hp.drop_path_rate,
         )
         self.criterion = dice_loss(scale=2)
-
         if self.hp.use_ema:
-            self.ema_model = copy.deepcopy(self.model)
-            for p in self.ema_model.parameters():
-                p.requires_grad_(False)
+            self.ema_model = create_ema(self.model)
 
     def setup(self, stage: str):
         img_files = get_img_files()
