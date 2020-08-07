@@ -1,6 +1,6 @@
 import dataclasses
-from functools import cached_property
-from logging import getLogger, FileHandler
+import sys
+from logging import getLogger, FileHandler, StreamHandler
 from multiprocessing import cpu_count
 from os import cpu_count
 from pathlib import Path
@@ -136,7 +136,8 @@ class PLModule(PLBaseModule):
             pin_memory=True,
         )
 
-    @cached_property
+    # @cached_property
+    @property
     def hp(self) -> ModuleParams:
         return ModuleParams(**self.hparams)
 
@@ -154,7 +155,8 @@ def train(params: Params):
     log_dir.mkdir(parents=True, exist_ok=True)
 
     logger = getLogger('lightning')
-    logger.addHandler(FileHandler(log_dir / 'train.log'))
+    # logger.addHandler(FileHandler(log_dir / 'train.log'))
+    logger.addHandler(StreamHandler(sys.stdout))
     logger.info(params.pretty())
 
     trainer = pl.Trainer(

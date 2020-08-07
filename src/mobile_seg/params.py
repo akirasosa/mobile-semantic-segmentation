@@ -61,5 +61,5 @@ class Params(ParamsMixIn):
 # %%
 if __name__ == '__main__':
     # %%
-    p = Params.load('params/pre_train/002.yaml')
+    p = Params.load('params/001.yaml')
     print(p)

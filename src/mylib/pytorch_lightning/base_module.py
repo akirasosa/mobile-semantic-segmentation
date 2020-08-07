@@ -1,6 +1,5 @@
 import dataclasses
 from abc import ABC, abstractmethod
-from functools import cached_property
 from typing import Callable, List, Dict, Optional, TypeVar, Type
 
 import pytorch_lightning as pl
@@ -13,8 +12,8 @@ from torch.utils.data import Dataset
 from torch.utils.tensorboard import SummaryWriter
 from torch_optimizer import RAdam
 
-from mylib.torch.optim.sched import flat_cos
 from mylib.torch.ensemble.ema import update_ema
+from mylib.torch.optim.sched import flat_cos
 
 T = TypeVar('T')
 
@@ -179,10 +178,9 @@ class PLBaseModule(pl.LightningModule, ABC):
         f = self.hp.ema_eval_freq
         return self.current_epoch % f == f - 1
 
-    @abstractmethod
-    @cached_property
+    @property
     def hp(self) -> Type[ModuleBaseParams]:
-        pass
+        raise NotImplemented
 
     @property
     def tb_logger(self) -> SummaryWriter:
