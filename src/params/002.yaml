@@ -1,0 +1,21 @@
+note: 'Default training'
+
+module_params:
+  optim: sgd
+  lr: 3e-2
+  weight_decay: 0.
+  batch_size: 8
+  ema_decay: null
+  ema_eval_freq: 1
+  fold: 0
+  n_splits: 5
+  seed: 1
+  drop_rate: 0.2
+  drop_path_rate: 0.2
+
+trainer_params:
+  epochs: 200
+  gpus: [0]
+  num_tpu_cores: null
+  use_16bit: false
+
