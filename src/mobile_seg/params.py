@@ -1,9 +1,5 @@
-import copy
 import dataclasses
 from typing import Optional, List
-
-from dacite import from_dict
-from omegaconf import OmegaConf
 
 from mobile_seg.const import EXP_DIR
 from mylib.params import ParamsMixIn
@@ -71,21 +67,16 @@ class Params(ParamsMixIn):
 
     def copy_for_cv(self):
         conf_orig = self.dict_config()
-
-        cv_params = []
-        for n in range(self.module_params.n_splits):
-            d = OmegaConf.to_container(conf_orig)
-            d = {
-                **copy.deepcopy(d),
+        return [
+            Params.from_dict({
+                **conf_orig,
                 'module_params': {
-                    **d['module_params'],
+                    **conf_orig.module_params,
                     'fold': n,
                 },
-            }
-            d = OmegaConf.to_container(OmegaConf.create(d))
-            cv_params.append(from_dict(data_class=Params, data=d))
-
-        return cv_params
+            })
+            for n in range(self.module_params.n_splits)
+        ]
 
 
 # %%
@@ -93,3 +84,6 @@ if __name__ == '__main__':
     # %%
     p = Params.load('params/001.yaml')
     print(p)
+    # %%
+    for cp in p.copy_for_cv():
+        print(cp.pretty())

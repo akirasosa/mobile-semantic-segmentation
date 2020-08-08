@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import TypeVar, Type, Optional, Union, IO
+from typing import TypeVar, Type, Optional, Union, IO, Dict
 
 from dacite import from_dict
 from omegaconf import OmegaConf, DictConfig
@@ -18,6 +18,11 @@ class ParamsMixIn:
         data = OmegaConf.to_container(OmegaConf.load(file))
 
         return from_dict(data_class=cls, data=data)
+
+    @classmethod
+    def from_dict(cls: Type[T], d: Dict) -> T:
+        d = OmegaConf.to_container(OmegaConf.create(d))
+        return from_dict(data_class=cls, data=d)
 
     def pretty(self) -> str:
         return self.dict_config().pretty()
