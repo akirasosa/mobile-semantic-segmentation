@@ -187,4 +187,9 @@ def train(params: Params):
 if __name__ == '__main__':
     configure_logging()
     params = Params.load()
-    train(params)
+    if params.do_cv:
+        for p in params.copy_for_cv():
+            train(p)
+    else:
+        train(params)
+
