@@ -1,4 +1,4 @@
-from functools import cached_property
+from functools import cached_property, partial
 from logging import getLogger, FileHandler
 from multiprocessing import cpu_count
 from os import cpu_count
@@ -13,7 +13,9 @@ from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 from sklearn.model_selection import KFold
+from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader, Dataset
+from torch_optimizer import RAdam
 
 from mobile_seg.dataset import get_img_files, MaskDataset
 from mobile_seg.logging import configure_logging
@@ -26,6 +28,9 @@ from mylib.torch.ensemble.ema import create_ema
 
 
 # noinspection PyAbstractClass
+from mylib.torch.optim.sched import flat_cos
+
+
 class DataModule(pl.LightningDataModule):
     def __init__(self, params: DataParams):
         super().__init__()
@@ -123,6 +128,22 @@ class PLModule(PLBaseModule[MobileNetV2_unet]):
             'loss': loss,
             'n_processed': n_processed,
         }
+
+    def configure_optimizers(self):
+        opt = RAdam(
+            self.model.params,
+            lr=self.hp.lr,
+            weight_decay=self.hp.weight_decay,
+        )
+        # noinspection PyTypeChecker
+        sched = {
+            'scheduler': LambdaLR(
+                opt,
+                lr_lambda=partial(flat_cos, total_steps=self.total_steps),
+            ),
+            'interval': 'step',
+        }
+        return [opt], [sched]
 
     @cached_property
     def hp(self) -> ModuleParams:

@@ -6,22 +6,14 @@ from typing import Callable, Optional, Tuple, Protocol, Sequence, Mapping, Gener
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-from pytorch_ranger import Ranger
-from torch.optim import SGD
-from torch.optim.lr_scheduler import OneCycleLR, LambdaLR
 from torch.optim.optimizer import Optimizer
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from torch_optimizer import RAdam
 
 from mylib.torch.ensemble.ema import update_ema
-from mylib.torch.optim.sched import flat_cos
 
 
 class ModuleParams(Protocol):
-    optim: str
-    lr: float
-    weight_decay: float
     ema_decay: Optional[float]
     ema_eval_freq: int
 
@@ -140,43 +132,6 @@ class PLBaseModule(pl.LightningModule, ABC, Generic[T]):
                 self.tb_logger.add_scalars(k, {
                     prefix: v,
                 }, self.n_processed)
-
-    def configure_optimizers(self):
-        if self.hp.optim == 'sgd':
-            opt = SGD(
-                self.model.parameters(),
-                lr=self.hp.lr,
-                momentum=0.9,
-                nesterov=True,
-            )
-            sched = {
-                'scheduler': OneCycleLR(
-                    opt,
-                    max_lr=self.hp.lr,
-                    total_steps=self.total_steps),
-                'interval': 'step',
-            }
-            return [opt], [sched]
-
-        if self.hp.optim == 'ranger':
-            optim = Ranger
-        elif self.hp.optim == 'radam':
-            optim = RAdam
-        else:
-            raise Exception(f'Not supported optim: {self.hp.optim}')
-        opt = optim(
-            self.model.parameters(),
-            lr=self.hp.lr,
-            weight_decay=self.hp.weight_decay,
-        )
-        sched = {
-            'scheduler': LambdaLR(
-                opt,
-                lr_lambda=flat_cos(self.total_steps),
-            ),
-            'interval': 'step',
-        }
-        return [opt], [sched]
 
     @property
     def steps_per_epoch(self) -> int:
