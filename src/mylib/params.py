@@ -25,7 +25,7 @@ class ParamsMixIn:
         return from_dict(data_class=cls, data=d)
 
     def pretty(self) -> str:
-        return self.dict_config().pretty()
+        return OmegaConf.to_yaml(self.dict_config())
 
     def dict_config(self) -> DictConfig:
         return OmegaConf.structured(self)
