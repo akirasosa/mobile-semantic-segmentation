@@ -19,4 +19,4 @@ trainer_params:
   epochs: 200
   gpus: [0]
   num_tpu_cores: null
-  use_16bit: false
+  amp_level: O1

@@ -131,7 +131,7 @@ class PLModule(PLBaseModule[MobileNetV2_unet]):
 
     def configure_optimizers(self):
         opt = RAdam(
-            self.model.params,
+            self.model.parameters(),
             lr=self.hp.lr,
             weight_decay=self.hp.weight_decay,
         )
@@ -172,7 +172,8 @@ def train(params: Params):
         tpu_cores=params.t.num_tpu_cores,
         logger=tb_logger,
         precision=16 if params.t.use_16bit else 32,
-        # amp_level='O1' if params.t.use_16bit else None,
+        amp_level=params.t.amp_level,
+        amp_backend='apex',
         resume_from_checkpoint=params.t.resume_from_checkpoint,
         weights_save_path=str(params.t.save_dir),
         # early_stop_callback=EarlyStopping(
@@ -187,6 +188,8 @@ def train(params: Params):
             save_last=True,
             verbose=True,
         ),
+        deterministic=True,
+        benchmark=True,
     )
     net = PLModule(params.m.dict_config())
     dm = DataModule(params.d)

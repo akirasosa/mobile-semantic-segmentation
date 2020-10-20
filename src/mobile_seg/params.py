@@ -10,9 +10,13 @@ class TrainerParams(ParamsMixIn):
     num_tpu_cores: Optional[int] = None
     gpus: Optional[List[int]] = None
     epochs: int = 100
-    use_16bit: bool = False
+    amp_level: Optional[str] = None
     resume_from_checkpoint: Optional[str] = None
     save_dir: str = str(EXP_DIR)
+
+    @property
+    def use_16bit(self) -> bool:
+        return self.amp_level is not None
 
 
 @dataclasses.dataclass(frozen=True)

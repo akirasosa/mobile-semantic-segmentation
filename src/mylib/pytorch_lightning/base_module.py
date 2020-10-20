@@ -105,7 +105,7 @@ class PLBaseModule(pl.LightningModule, ABC, Generic[T]):
                     **result,
                     f'ema_{idx}_loss': metrics_ema['loss'],
                 }
-        self.log_dict(result)
+        self.log_dict(result, logger=False)
 
     def collect_metrics(self, outputs: Sequence[StepResult]) -> Mapping:
         loss = 0.
