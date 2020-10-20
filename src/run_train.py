@@ -13,7 +13,7 @@ from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 from sklearn.model_selection import KFold
-from torch.optim.lr_scheduler import LambdaLR
+from torch.optim.lr_scheduler import LambdaLR, OneCycleLR
 from torch.utils.data import DataLoader, Dataset
 from torch_optimizer import RAdam
 
@@ -25,12 +25,10 @@ from mobile_seg.params import ModuleParams, Params, DataParams
 from mylib.albumentations.augmentations.transforms import MyCoarseDropout
 from mylib.pytorch_lightning.base_module import PLBaseModule, StepResult
 from mylib.torch.ensemble.ema import create_ema
-
-
-# noinspection PyAbstractClass
 from mylib.torch.optim.sched import flat_cos
 
 
+# noinspection PyAbstractClass
 class DataModule(pl.LightningDataModule):
     def __init__(self, params: DataParams):
         super().__init__()
@@ -113,12 +111,9 @@ class PLModule(PLBaseModule[MobileNetV2_unet]):
 
     def step(self, model: MobileNetV2_unet, batch) -> StepResult:
         X, y = batch
-
-        if model is None:
-            y_hat = self.forward(X)
-        else:
-            y_hat = model(X)
-
+        if self.is_half:
+            X = X.half()
+        y_hat = model.forward(X)
         # assert y.shape == y_hat.shape, f'{y.shape}, {y_hat.shape}'
 
         loss = self.criterion(y_hat, y)
@@ -130,19 +125,43 @@ class PLModule(PLBaseModule[MobileNetV2_unet]):
         }
 
     def configure_optimizers(self):
-        opt = RAdam(
-            self.model.parameters(),
-            lr=self.hp.lr,
-            weight_decay=self.hp.weight_decay,
-        )
-        # noinspection PyTypeChecker
-        sched = {
-            'scheduler': LambdaLR(
-                opt,
-                lr_lambda=partial(flat_cos, total_steps=self.total_steps),
-            ),
-            'interval': 'step',
-        }
+        params = self.model.parameters()
+
+        if self.hp.optim == 'fused_adam':
+            from apex.optimizers import FusedAdam
+            opt = FusedAdam(
+                params,
+                lr=self.hp.lr,
+                weight_decay=self.hp.weight_decay,
+            )
+            sched = {
+                'scheduler': OneCycleLR(
+                    opt,
+                    max_lr=self.hp.lr,
+                    total_steps=self.total_steps,
+                ),
+                'interval': 'step',
+            }
+        elif self.hp.optim == 'radam':
+            opt = RAdam(
+                params,
+                lr=self.hp.lr,
+                weight_decay=self.hp.weight_decay,
+            )
+            # noinspection PyTypeChecker
+            sched = {
+                'scheduler': LambdaLR(
+                    opt,
+                    lr_lambda=partial(
+                        flat_cos,
+                        total_steps=self.total_steps,
+                    ),
+                ),
+                'interval': 'step',
+            }
+        else:
+            raise Exception
+
         return [opt], [sched]
 
     @cached_property

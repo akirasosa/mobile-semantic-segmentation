@@ -105,9 +105,10 @@ class PLBaseModule(pl.LightningModule, ABC, Generic[T]):
                     **result,
                     f'ema_{idx}_loss': metrics_ema['loss'],
                 }
-        self.log_dict(result, logger=False)
+        self.log_dict(result)
 
-    def collect_metrics(self, outputs: Sequence[StepResult]) -> Mapping:
+    @staticmethod
+    def collect_metrics(outputs: Sequence[StepResult]) -> Mapping:
         loss = 0.
         total = 0
         for x in outputs:
@@ -165,3 +166,7 @@ class PLBaseModule(pl.LightningModule, ABC, Generic[T]):
     @property
     def logger_(self) -> Logger:
         return getLogger('lightning')
+
+    @property
+    def is_half(self) -> bool:
+        return self.trainer.amp_level == 'O2'

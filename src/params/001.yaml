@@ -18,5 +18,3 @@ module_params:
 trainer_params:
   epochs: 200
   gpus: [0]
-  num_tpu_cores: null
-  amp_level: O1
