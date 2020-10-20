@@ -89,8 +89,6 @@ class PLBaseModule(pl.LightningModule, ABC, Generic[T]):
         }
         self.__log(metrics, prefix='train')
 
-        return {}
-
     def validation_epoch_end(self, outputs_list: Union[Sequence[StepResult], Sequence[Sequence[ValStepResult]]]):
         # Ensure that val loader is a list.
         if isinstance(self.val_dataloader(), DataLoader):
@@ -115,8 +113,7 @@ class PLBaseModule(pl.LightningModule, ABC, Generic[T]):
                     **result,
                     f'ema_{idx}_loss': metrics_ema['loss'],
                 }
-
-        return result
+        self.log_dict(result)
 
     def collect_metrics(self, outputs: Sequence[StepResult]) -> Mapping:
         loss = 0.
@@ -131,16 +128,18 @@ class PLBaseModule(pl.LightningModule, ABC, Generic[T]):
         }
 
     def __log(self, metrics: Mapping, prefix: str):
-        if self.global_step > 0:
-            for k, v in metrics.items():
-                if k == 'lr':
-                    self.tb_logger.add_scalars('lr', {
-                        'lr': metrics['lr'],
-                    }, self.n_processed)
-                else:
-                    self.tb_logger.add_scalars(k, {
-                        prefix: v,
-                    }, self.n_processed)
+        if self.n_processed == 0:
+            return
+
+        for k, v in metrics.items():
+            if k == 'lr':
+                self.tb_logger.add_scalars('lr', {
+                    'lr': metrics['lr'],
+                }, self.n_processed)
+            else:
+                self.tb_logger.add_scalars(k, {
+                    prefix: v,
+                }, self.n_processed)
 
     def configure_optimizers(self):
         if self.hp.optim == 'sgd':

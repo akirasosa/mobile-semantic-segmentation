@@ -162,7 +162,7 @@ def train(params: Params):
         #     mode='min'
         # ),
         checkpoint_callback=ModelCheckpoint(
-            monitor='ema_loss' if params.m.use_ema else 'val_loss',
+            monitor='ema_0_loss' if params.m.use_ema else 'val_0_loss',
             save_last=True,
             verbose=True,
         ),
