@@ -1,10 +1,13 @@
 import copy
+from typing import TypeVar
 
 import torch
 import torch.nn as nn
 
+T = TypeVar('T', bound=nn.Module)
 
-def create_ema(src_model: nn.Module) -> nn.Module:
+
+def create_ema(src_model: T) -> T:
     ema_model = copy.deepcopy(src_model).eval()
     for p in ema_model.parameters():
         p.requires_grad_(False)
