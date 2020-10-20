@@ -1,4 +1,4 @@
-note: 'Default training'
+note: 'Faster training'
 
 data_params:
   fold: 0
