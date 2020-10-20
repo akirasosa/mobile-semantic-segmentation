@@ -21,26 +21,29 @@ class ModuleParams(ModuleBaseParams, ParamsMixIn):
     lr: float = 3e-4
     weight_decay: float = 1e-4
 
-    batch_size: int = 32
-
     optim: str = 'radam'
 
     ema_decay: Optional[float] = None
     ema_eval_freq: int = 1
+
+    drop_rate: float = 0.
+    drop_path_rate: float = 0.
+
+    @property
+    def use_ema(self) -> bool:
+        return self.ema_decay is not None
+
+
+@dataclasses.dataclass(frozen=True)
+class DataParams(ParamsMixIn):
+    batch_size: int = 32
 
     fold: int = 0  # -1 for cross validation
     n_splits: Optional[int] = 5
 
     img_size: int = 224
 
-    drop_rate: float = 0.
-    drop_path_rate: float = 0.
-
     seed: int = 0
-
-    @property
-    def use_ema(self) -> bool:
-        return self.ema_decay is not None
 
     @property
     def do_cv(self) -> bool:
@@ -51,19 +54,24 @@ class ModuleParams(ModuleBaseParams, ParamsMixIn):
 class Params(ParamsMixIn):
     module_params: ModuleParams
     trainer_params: TrainerParams
+    data_params: DataParams
     note: str = ''
 
     @property
-    def m(self):
+    def m(self) -> ModuleParams:
         return self.module_params
 
     @property
-    def t(self):
+    def t(self) -> TrainerParams:
         return self.trainer_params
 
     @property
+    def d(self) -> DataParams:
+        return self.data_params
+
+    @property
     def do_cv(self) -> bool:
-        return self.m.do_cv
+        return self.d.do_cv
 
     def copy_for_cv(self):
         conf_orig = self.dict_config()
@@ -75,7 +83,7 @@ class Params(ParamsMixIn):
                     'fold': n,
                 },
             })
-            for n in range(self.module_params.n_splits)
+            for n in range(self.d.n_splits)
         ]
 
 

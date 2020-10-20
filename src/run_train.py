@@ -5,7 +5,7 @@ from multiprocessing import cpu_count
 from os import cpu_count
 from pathlib import Path
 from time import time
-from typing import List, Dict
+from typing import List, Dict, Optional, Union, Sequence
 
 import albumentations as A
 import pytorch_lightning as pl
@@ -14,13 +14,13 @@ from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 from sklearn.model_selection import KFold
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 from mobile_seg.dataset import get_img_files, MaskDataset
 from mobile_seg.logging import configure_logging
 from mobile_seg.loss import dice_loss
 from mobile_seg.modules.net import MobileNetV2_unet
-from mobile_seg.params import ModuleParams, Params
+from mobile_seg.params import ModuleParams, Params, DataParams
 from mylib.albumentations.augmentations.transforms import MyCoarseDropout
 from mylib.pytorch_lightning.base_module import PLBaseModule
 from mylib.torch.ensemble.ema import create_ema
@@ -32,34 +32,30 @@ class Metrics:
     loss: float
 
 
-class PLModule(PLBaseModule):
-    def __init__(self, hparams: DictConfig):
+# noinspection PyAbstractClass
+class DataModule(pl.LightningDataModule):
+    def __init__(self, params: DataParams):
         super().__init__()
-        self.hparams = hparams
-        self.model = MobileNetV2_unet(
-            drop_rate=self.hp.drop_rate,
-            drop_path_rate=self.hp.drop_path_rate,
-        )
-        self.criterion = dice_loss(scale=2)
-        if self.hp.use_ema:
-            self.ema_model = create_ema(self.model)
+        self.params = params
+        self.train_dataset: Optional[Dataset] = None
+        self.val_dataset: Optional[Dataset] = None
 
-    def setup(self, stage: str):
+    def setup(self, stage: Optional[str] = None):
         img_files = get_img_files()
 
         folds = KFold(
-            n_splits=self.hp.n_splits,
-            random_state=self.hp.seed,
+            n_splits=self.params.n_splits,
+            random_state=self.params.seed,
             shuffle=True,
         )
-        train_idx, val_idx = list(folds.split(img_files))[self.hp.fold]
+        train_idx, val_idx = list(folds.split(img_files))[self.params.fold]
 
         self.train_dataset = MaskDataset(
             img_files[train_idx],
             transform=A.Compose([
                 A.RandomResizedCrop(
-                    self.hp.img_size,
-                    self.hp.img_size,
+                    self.params.img_size,
+                    self.params.img_size,
                 ),
                 A.Rotate(13),
                 A.HorizontalFlip(),
@@ -79,11 +75,43 @@ class PLModule(PLBaseModule):
             img_files[val_idx],
             transform=A.Compose([
                 A.Resize(
-                    self.hp.img_size,
-                    self.hp.img_size,
+                    self.params.img_size,
+                    self.params.img_size,
                 ),
             ]),
         )
+
+    def train_dataloader(self, *args, **kwargs) -> DataLoader:
+        return DataLoader(
+            self.train_dataset,
+            batch_size=self.params.batch_size,
+            shuffle=True,
+            num_workers=cpu_count(),
+            pin_memory=True,
+        )
+
+    def val_dataloader(self, *args, **kwargs) -> Union[DataLoader, Sequence[DataLoader]]:
+        return DataLoader(
+            self.val_dataset,
+            batch_size=self.params.batch_size,
+            shuffle=False,
+            num_workers=cpu_count(),
+            pin_memory=True,
+        )
+
+
+# noinspection PyAbstractClass
+class PLModule(PLBaseModule):
+    def __init__(self, hparams: DictConfig):
+        super().__init__()
+        self.hparams = hparams
+        self.model = MobileNetV2_unet(
+            drop_rate=self.hp.drop_rate,
+            drop_path_rate=self.hp.drop_path_rate,
+        )
+        self.criterion = dice_loss(scale=2)
+        if self.hp.use_ema:
+            self.ema_model = create_ema(self.model)
 
     def step(self, batch, prefix: str, model=None) -> Dict:
         X, y = batch
@@ -118,31 +146,13 @@ class PLModule(PLBaseModule):
             loss=loss,
         )
 
-    def train_dataloader(self):
-        return DataLoader(
-            self.train_dataset,
-            batch_size=self.hp.batch_size,
-            shuffle=True,
-            num_workers=cpu_count(),
-            pin_memory=True,
-        )
-
-    def val_dataloader(self):
-        return DataLoader(
-            self.val_dataset,
-            batch_size=self.hp.batch_size,
-            shuffle=False,
-            num_workers=cpu_count(),
-            pin_memory=True,
-        )
-
     @cached_property
     def hp(self) -> ModuleParams:
         return ModuleParams(**self.hparams)
 
 
 def train(params: Params):
-    seed_everything(params.m.seed)
+    seed_everything(params.d.seed)
 
     tb_logger = TensorBoardLogger(
         params.t.save_dir,
@@ -180,8 +190,9 @@ def train(params: Params):
         ),
     )
     net = PLModule(params.m.dict_config())
+    dm = DataModule(params.d)
 
-    trainer.fit(net)
+    trainer.fit(net, datamodule=dm)
 
 
 if __name__ == '__main__':
@@ -192,4 +203,3 @@ if __name__ == '__main__':
             train(p)
     else:
         train(params)
-

@@ -1,5 +1,10 @@
 note: 'Default training'
 
+data_params:
+  fold: 0
+  n_splits: 5
+  seed: 1
+
 module_params:
   optim: radam
   lr: 3e-4
@@ -7,9 +12,6 @@ module_params:
   batch_size: 8
   ema_decay: null
   ema_eval_freq: 1
-  fold: 0
-  n_splits: 5
-  seed: 1
   drop_rate: 0.2
   drop_path_rate: 0.2
 
