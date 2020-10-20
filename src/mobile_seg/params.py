@@ -3,7 +3,6 @@ from typing import Optional, List
 
 from mobile_seg.const import EXP_DIR
 from mylib.params import ParamsMixIn
-from mylib.pytorch_lightning.base_module import ModuleBaseParams
 
 
 @dataclasses.dataclass(frozen=True)
@@ -17,7 +16,7 @@ class TrainerParams(ParamsMixIn):
 
 
 @dataclasses.dataclass(frozen=True)
-class ModuleParams(ModuleBaseParams, ParamsMixIn):
+class ModuleParams(ParamsMixIn):
     lr: float = 3e-4
     weight_decay: float = 1e-4
 

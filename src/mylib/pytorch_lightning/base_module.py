@@ -1,42 +1,47 @@
-import dataclasses
 from abc import ABC, abstractmethod
-from functools import cached_property
-from typing import Callable, List, Dict, Optional, TypeVar, Type
+from logging import Logger, getLogger
+from typing import Callable, Optional, Tuple, Protocol, Sequence, Mapping, Generic, TypeVar, TypedDict, Dict, Any, \
+    Union
 
 import pytorch_lightning as pl
+import torch
 import torch.nn as nn
 from pytorch_ranger import Ranger
 from torch.optim import SGD
 from torch.optim.lr_scheduler import OneCycleLR, LambdaLR
 from torch.optim.optimizer import Optimizer
-from torch.utils.data import Dataset
+from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from torch_optimizer import RAdam
 
-from mylib.torch.optim.sched import flat_cos
 from mylib.torch.ensemble.ema import update_ema
-
-T = TypeVar('T')
-
-
-@dataclasses.dataclass(frozen=True)
-class ModuleBaseParams:
-    optim: str = 'radam'
-
-    lr: float = 3e-4
-    weight_decay: float = 0.
-
-    ema_decay: Optional[float] = None
-    ema_eval_freq: int = 1
+from mylib.torch.optim.sched import flat_cos
 
 
-class PLBaseModule(pl.LightningModule, ABC):
+class ModuleParams(Protocol):
+    optim: str
+    lr: float
+    weight_decay: float
+    ema_decay: Optional[float]
+    ema_eval_freq: int
+
+
+class StepResult(TypedDict):
+    loss: torch.Tensor
+    n_processed: int
+
+
+ValStepResult = Tuple[StepResult, Optional[StepResult]]  # val and ema
+T = TypeVar('T', bound=nn.Module)
+
+
+class PLBaseModule(pl.LightningModule, ABC, Generic[T]):
+    model: T
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.train_dataset: Optional[Dataset] = None
-        self.val_dataset: Optional[Dataset] = None
-        self.ema_model: Optional[nn.Module] = None
-        self.best: float = float('inf')
+        self.ema_model: Optional[T] = None
+        self.n_processed: int = 0
 
     def optimizer_step(
             self,
@@ -57,70 +62,85 @@ class PLBaseModule(pl.LightningModule, ABC):
         return self.model.forward(x)
 
     def training_step(self, batch, batch_idx):
-        result = self.step(batch, prefix='train')
-        return {
-            'loss': result['train_loss'],
-            **result,
-        }
+        result = self.step(self.model, batch)
+        self.n_processed += result['n_processed']
 
-    def validation_step(self, batch, batch_idx):
-        result = self.step(batch, prefix='val')
+        return result
+
+    def validation_step(self, batch, batch_idx, *args, **kwargs):
+        result = self.step(self.model, batch)
 
         if self.eval_ema:
-            result_ema = self.step(batch, prefix='ema', model=self.ema_model)
+            result_ema = self.step(self.ema_model, batch)
         else:
-            result_ema = {}
+            result_ema = None
 
-        return {
-            **result,
-            **result_ema,
-        }
+        return result, result_ema
 
     @abstractmethod
-    def step(self, batch, prefix: str, model=None) -> Dict:
+    def step(self, model: T, batch) -> StepResult:
         pass
 
-    def training_epoch_end(self, outputs):
-        metrics = self.collect_metrics(outputs, 'train')
-        self.__log(metrics, 'train')
+    def training_epoch_end(self, outputs: Sequence[StepResult]):
+        metrics = self.collect_metrics(outputs)
+        metrics = {
+            **metrics,
+            'lr': self.trainer.optimizers[0].param_groups[0]['lr'],
+        }
+        self.__log(metrics, prefix='train')
 
         return {}
 
-    def validation_epoch_end(self, outputs):
-        metrics = self.collect_metrics(outputs, 'val')
-        self.__log(metrics, 'val')
+    def validation_epoch_end(self, outputs_list: Union[Sequence[StepResult], Sequence[Sequence[ValStepResult]]]):
+        # Ensure that val loader is a list.
+        if isinstance(self.val_dataloader(), DataLoader):
+            outputs_list = [outputs_list]
 
-        if self.eval_ema:
-            metrics_ema = self.collect_metrics(outputs, 'ema')
-            self.__log(metrics_ema, 'ema')
-        else:
-            metrics_ema = None
+        result: Dict[str, Any] = {}
 
-        if metrics.loss < self.best:
-            self.best = metrics.loss
+        for idx, outputs in enumerate(outputs_list):
+            val_outputs = [val for val, ema in outputs]
+            metrics = self.collect_metrics(val_outputs)
+            self.__log(metrics, prefix=f'val_{idx}')
+            result = {
+                **result,
+                f'val_{idx}_loss': metrics['loss'],
+            }
+
+            ema_outputs = [ema for val, ema in outputs]
+            if not any(x is None for x in ema_outputs):
+                metrics_ema = self.collect_metrics(ema_outputs)
+                self.__log(metrics_ema, prefix=f'ema_{idx}')
+                result = {
+                    **result,
+                    f'ema_{idx}_loss': metrics_ema['loss'],
+                }
+
+        return result
+
+    def collect_metrics(self, outputs: Sequence[StepResult]) -> Mapping:
+        loss = 0.
+        total = 0
+        for x in outputs:
+            total += x['n_processed']
+            loss += x['loss'] * x['n_processed']
+        loss /= total
 
         return {
-            'progress_bar': {
-                'val_loss': metrics.loss,
-                'best': self.best,
-            },
-            'val_loss': metrics.loss,
-            'ema_loss': metrics_ema.loss if metrics_ema is not None else None,
+            'loss': loss,
         }
 
-    @abstractmethod
-    def collect_metrics(self, outputs: List[Dict], prefix: str) -> T:
-        pass
-
-    def __log(self, metrics: T, prefix: str):
+    def __log(self, metrics: Mapping, prefix: str):
         if self.global_step > 0:
-            self.tb_logger.add_scalar('lr', metrics.lr, self.current_epoch)
-            for k, v in dataclasses.asdict(metrics).items():
+            for k, v in metrics.items():
                 if k == 'lr':
-                    continue
-                self.tb_logger.add_scalars(k, {
-                    prefix: v,
-                }, self.current_epoch)
+                    self.tb_logger.add_scalars('lr', {
+                        'lr': metrics['lr'],
+                    }, self.n_processed)
+                else:
+                    self.tb_logger.add_scalars(k, {
+                        prefix: v,
+                    }, self.n_processed)
 
     def configure_optimizers(self):
         if self.hp.optim == 'sgd':
@@ -179,11 +199,15 @@ class PLBaseModule(pl.LightningModule, ABC):
         f = self.hp.ema_eval_freq
         return self.current_epoch % f == f - 1
 
+    @property
     @abstractmethod
-    @cached_property
-    def hp(self) -> Type[ModuleBaseParams]:
+    def hp(self) -> ModuleParams:
         pass
 
     @property
     def tb_logger(self) -> SummaryWriter:
         return self.logger.experiment
+
+    @property
+    def logger_(self) -> Logger:
+        return getLogger('lightning')

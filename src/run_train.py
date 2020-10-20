@@ -1,11 +1,10 @@
-import dataclasses
 from functools import cached_property
 from logging import getLogger, FileHandler
 from multiprocessing import cpu_count
 from os import cpu_count
 from pathlib import Path
 from time import time
-from typing import List, Dict, Optional, Union, Sequence
+from typing import Optional, Union, Sequence
 
 import albumentations as A
 import pytorch_lightning as pl
@@ -22,14 +21,8 @@ from mobile_seg.loss import dice_loss
 from mobile_seg.modules.net import MobileNetV2_unet
 from mobile_seg.params import ModuleParams, Params, DataParams
 from mylib.albumentations.augmentations.transforms import MyCoarseDropout
-from mylib.pytorch_lightning.base_module import PLBaseModule
+from mylib.pytorch_lightning.base_module import PLBaseModule, StepResult
 from mylib.torch.ensemble.ema import create_ema
-
-
-@dataclasses.dataclass(frozen=True)
-class Metrics:
-    lr: float
-    loss: float
 
 
 # noinspection PyAbstractClass
@@ -101,7 +94,7 @@ class DataModule(pl.LightningDataModule):
 
 
 # noinspection PyAbstractClass
-class PLModule(PLBaseModule):
+class PLModule(PLBaseModule[MobileNetV2_unet]):
     def __init__(self, hparams: DictConfig):
         super().__init__()
         self.hparams = hparams
@@ -113,7 +106,7 @@ class PLModule(PLBaseModule):
         if self.hp.use_ema:
             self.ema_model = create_ema(self.model)
 
-    def step(self, batch, prefix: str, model=None) -> Dict:
+    def step(self, model: MobileNetV2_unet, batch) -> StepResult:
         X, y = batch
 
         if model is None:
@@ -124,27 +117,12 @@ class PLModule(PLBaseModule):
         # assert y.shape == y_hat.shape, f'{y.shape}, {y_hat.shape}'
 
         loss = self.criterion(y_hat, y)
-        size = len(y)
+        n_processed = len(y)
 
         return {
-            f'{prefix}_loss': loss,
-            f'{prefix}_size': size,
+            'loss': loss,
+            'n_processed': n_processed,
         }
-
-    def collect_metrics(self, outputs: List[Dict], prefix: str) -> Metrics:
-        loss = 0
-        total_size = 0
-
-        for o in outputs:
-            size = o[f'{prefix}_size']
-            total_size += size
-            loss += o[f'{prefix}_loss'] * size
-        loss = loss / total_size
-
-        return Metrics(
-            lr=self.trainer.optimizers[0].param_groups[0]['lr'],
-            loss=loss,
-        )
 
     @cached_property
     def hp(self) -> ModuleParams:
