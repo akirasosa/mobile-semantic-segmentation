@@ -27,6 +27,16 @@ def scatter_mean(src: torch.Tensor, index: torch.Tensor, dim: int = -1,
     return out, count_ret
 
 
+@torch.jit.script
+def scatter_sort(src: torch.Tensor, index: torch.Tensor, dim: int = 0, descending: bool = False, eps: float = 1e-12):
+    f_src = src.float()
+    f_min, f_max = f_src.min(dim)[0], f_src.max(dim)[0]
+    norm = (f_src - f_min) / (f_max - f_min + eps) + index.float() * (-1) ** int(descending)
+    perm = norm.argsort(dim=dim, descending=descending)
+
+    return src[perm], perm,
+
+
 def onehot(indexes, N=None, ignore_index=None):
     """
     Creates a one-representation of indexes with N possible entries

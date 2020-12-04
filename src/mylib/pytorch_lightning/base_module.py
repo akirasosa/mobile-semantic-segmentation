@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 from logging import Logger, getLogger
-from typing import Callable, Optional, Tuple, Protocol, Sequence, Mapping, Generic, TypeVar, TypedDict, Dict, Any, \
+from typing import Optional, Tuple, Protocol, Sequence, Mapping, Generic, TypeVar, TypedDict, Dict, Any, \
     Union
 
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-from torch.optim.optimizer import Optimizer
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
@@ -16,6 +16,7 @@ from mylib.torch.ensemble.ema import update_ema
 class ModuleParams(Protocol):
     ema_decay: Optional[float]
     ema_eval_freq: int
+    use_ema: bool
 
 
 class StepResult(TypedDict):
@@ -35,27 +36,15 @@ class PLBaseModule(pl.LightningModule, ABC, Generic[T]):
         self.ema_model: Optional[T] = None
         self.n_processed: int = 0
 
-    def optimizer_step(
-            self,
-            epoch: int,
-            batch_idx: int,
-            optimizer: Optimizer,
-            optimizer_idx: int,
-            second_order_closure: Optional[Callable] = None,
-            on_tpu: bool = False,
-            using_native_amp: bool = False,
-            using_lbfgs: bool = False,
-    ) -> None:
-        super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, second_order_closure)
-        if self.ema_model is not None:
-            update_ema(self.ema_model, self.model, self.hp.ema_decay)
-
     def forward(self, x):
         return self.model.forward(x)
 
     def training_step(self, batch, batch_idx):
         result = self.step(self.model, batch)
         self.n_processed += result['n_processed']
+
+        if self.ema_model is not None:
+            update_ema(self.ema_model, self.model, self.hp.ema_decay)
 
         return result
 
@@ -108,6 +97,7 @@ class PLBaseModule(pl.LightningModule, ABC, Generic[T]):
         self.log_dict(result)
 
     @staticmethod
+    @torch.no_grad()
     def collect_metrics(outputs: Sequence[StepResult]) -> Mapping:
         loss = 0.
         total = 0
@@ -155,18 +145,35 @@ class PLBaseModule(pl.LightningModule, ABC, Generic[T]):
         return self.current_epoch % f == f - 1
 
     @property
-    @abstractmethod
     def hp(self) -> ModuleParams:
         pass
 
     @property
-    def tb_logger(self) -> SummaryWriter:
-        return self.logger.experiment
+    def tb_logger(self) -> Optional[SummaryWriter]:
+        if isinstance(self.logger.experiment, SummaryWriter):
+            return self.logger.experiment
+        for l in self.logger:
+            if isinstance(l.experiment, SummaryWriter):
+                return l.experiment
+        return None
 
     @property
     def logger_(self) -> Logger:
         return getLogger('lightning')
 
-    @property
-    def is_half(self) -> bool:
-        return self.trainer.amp_level == 'O2'
+
+def load_pretrained_dict(ckpt_path: str) -> OrderedDict:
+    ckpt = torch.load(ckpt_path)
+
+    if any(k.startswith('ema_model') for k in ckpt['state_dict'].keys()):
+        prefix = 'ema_model'
+    else:
+        prefix = 'model'
+
+    new_dict = OrderedDict()
+    for k, v in ckpt['state_dict'].items():
+        if not k.startswith(f'{prefix}.'):
+            continue
+        new_dict[k[len(f'{prefix}.'):]] = v
+
+    return new_dict

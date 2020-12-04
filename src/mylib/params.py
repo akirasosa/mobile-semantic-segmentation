@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 from typing import TypeVar, Type, Optional, Union, IO, Dict
 
+import yaml
 from dacite import from_dict
 from omegaconf import OmegaConf, DictConfig
 
@@ -29,6 +30,9 @@ class ParamsMixIn:
 
     def dict_config(self) -> DictConfig:
         return OmegaConf.structured(self)
+
+    def to_dict(self) -> Dict:
+        return yaml.safe_load(self.pretty())
 
     def save(self, f: Union[str, Path, IO[str]]):
         OmegaConf.save(self.dict_config(), f)
