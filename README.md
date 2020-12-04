@@ -20,7 +20,7 @@ About speed vs accuracy, more details are available at [my post](https://medium.
 ## Requirements
 
 * Python 3.8
-* [requirements.txt](./requirements.txt)
+* ```pip install -r requirements.txt -f https://download.pytorch.org/whl/torch_stable.html```
 * CoreML for iOS app.
 
 ## About Model
