@@ -6,17 +6,14 @@ data_params:
   seed: 1
 
 module_params:
-  optim: fused_adam
+  optim: adam
   lr: 3e-4
   weight_decay: 0.
   batch_size: 8
-  ema_decay: null
-  ema_eval_freq: 1
   drop_rate: 0.2
   drop_path_rate: 0.2
 
 trainer_params:
   epochs: 200
-  gpus: [0]
-  num_tpu_cores: null
-  amp_level: O2
+  gpus: -1
+  precision: 16

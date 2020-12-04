@@ -4,26 +4,26 @@ from multiprocessing import cpu_count
 from os import cpu_count
 from pathlib import Path
 from time import time
-from typing import Optional, Union, Sequence
+from typing import Optional, Union, Sequence, Dict
 
 import albumentations as A
 import pytorch_lightning as pl
-from omegaconf import DictConfig
 from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 from sklearn.model_selection import KFold
+from torch.optim import Adam
 from torch.optim.lr_scheduler import LambdaLR, OneCycleLR
 from torch.utils.data import DataLoader, Dataset
 from torch_optimizer import RAdam
 
 from mobile_seg.dataset import get_img_files, MaskDataset
-from mobile_seg.logging import configure_logging
 from mobile_seg.loss import dice_loss
 from mobile_seg.modules.net import MobileNetV2_unet
 from mobile_seg.params import ModuleParams, Params, DataParams
 from mylib.albumentations.augmentations.transforms import MyCoarseDropout
 from mylib.pytorch_lightning.base_module import PLBaseModule, StepResult
+from mylib.pytorch_lightning.logging import configure_logging
 from mylib.torch.ensemble.ema import create_ema
 from mylib.torch.optim.sched import flat_cos
 
@@ -98,7 +98,7 @@ class DataModule(pl.LightningDataModule):
 
 # noinspection PyAbstractClass
 class PLModule(PLBaseModule[MobileNetV2_unet]):
-    def __init__(self, hparams: DictConfig):
+    def __init__(self, hparams: Dict):
         super().__init__()
         self.hparams = hparams
         self.model = MobileNetV2_unet(
@@ -111,8 +111,6 @@ class PLModule(PLBaseModule[MobileNetV2_unet]):
 
     def step(self, model: MobileNetV2_unet, batch) -> StepResult:
         X, y = batch
-        if self.is_half:
-            X = X.half()
         y_hat = model.forward(X)
         # assert y.shape == y_hat.shape, f'{y.shape}, {y_hat.shape}'
 
@@ -127,9 +125,8 @@ class PLModule(PLBaseModule[MobileNetV2_unet]):
     def configure_optimizers(self):
         params = self.model.parameters()
 
-        if self.hp.optim == 'fused_adam':
-            from apex.optimizers import FusedAdam
-            opt = FusedAdam(
+        if self.hp.optim == 'adam':
+            opt = Adam(
                 params,
                 lr=self.hp.lr,
                 weight_decay=self.hp.weight_decay,
@@ -166,7 +163,7 @@ class PLModule(PLBaseModule[MobileNetV2_unet]):
 
     @cached_property
     def hp(self) -> ModuleParams:
-        return ModuleParams(**self.hparams)
+        return ModuleParams.from_dict(dict(self.hparams))
 
 
 def train(params: Params):
@@ -190,27 +187,26 @@ def train(params: Params):
         gpus=params.t.gpus,
         tpu_cores=params.t.num_tpu_cores,
         logger=tb_logger,
-        precision=16 if params.t.use_16bit else 32,
-        amp_level=params.t.amp_level,
-        amp_backend='apex',
+        precision=params.t.precision,
         resume_from_checkpoint=params.t.resume_from_checkpoint,
-        weights_save_path=str(params.t.save_dir),
-        # early_stop_callback=EarlyStopping(
-        #     monitor='ema_loss' if params.m.use_ema else 'val_loss',
-        #     min_delta=0.00,
-        #     patience=30,
-        #     verbose=False,
-        #     mode='min'
-        # ),
-        checkpoint_callback=ModelCheckpoint(
-            monitor='ema_0_loss' if params.m.use_ema else 'val_0_loss',
-            save_last=True,
-            verbose=True,
-        ),
+        weights_save_path=params.t.save_dir,
+        callbacks=[
+            # EarlyStopping(
+            #     monitor='ema_0_loss' if params.m.use_ema else 'val_0_loss',
+            #     patience=3,
+            #     mode='min'
+            # ),
+            ModelCheckpoint(
+                monitor='ema_0_loss' if params.m.use_ema else 'val_0_loss',
+                save_last=True,
+                verbose=True,
+            ),
+        ],
+        checkpoint_callback=True,
         deterministic=True,
         benchmark=True,
     )
-    net = PLModule(params.m.dict_config())
+    net = PLModule(params.m.to_dict())
     dm = DataModule(params.d)
 
     trainer.fit(net, datamodule=dm)

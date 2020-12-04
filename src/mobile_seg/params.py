@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Optional, List
+from typing import Optional
 
 from mobile_seg.const import EXP_DIR
 from mylib.params import ParamsMixIn
@@ -8,15 +8,15 @@ from mylib.params import ParamsMixIn
 @dataclasses.dataclass(frozen=True)
 class TrainerParams(ParamsMixIn):
     num_tpu_cores: Optional[int] = None
-    gpus: Optional[List[int]] = None
+    gpus: Optional[int] = None
     epochs: int = 100
-    amp_level: Optional[str] = None
     resume_from_checkpoint: Optional[str] = None
     save_dir: str = str(EXP_DIR)
-
-    @property
-    def use_16bit(self) -> bool:
-        return self.amp_level is not None
+    distributed_backend: Optional[str] = None
+    num_nodes: int = 1
+    accumulate_grad_batches: int = 1
+    weights_save_path: Optional[str] = None
+    precision: int = 32
 
 
 @dataclasses.dataclass(frozen=True)
@@ -81,7 +81,7 @@ class Params(ParamsMixIn):
         return [
             Params.from_dict({
                 **conf_orig,
-                'module_params': {
+                'data_params': {
                     **conf_orig.module_params,
                     'fold': n,
                 },
