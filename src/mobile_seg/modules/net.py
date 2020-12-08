@@ -6,6 +6,8 @@ import torch.nn as nn
 from timm.models.efficientnet import mobilenetv2_100
 from timm.models.efficientnet_builder import efficientnet_init_weights
 
+from mylib.pytorch_lightning.base_module import load_pretrained_dict
+
 
 class ConvBNReLU(nn.Sequential):
     def __init__(self, in_planes, out_planes, kernel_size=3, stride=1, groups=1, norm_layer=None):
@@ -111,13 +113,9 @@ class MobileNetV2_unet(nn.Module):
 
 
 def load_trained_model(ckpt_path: Path) -> MobileNetV2_unet:
-    state_dict: OrderedDict = torch.load(ckpt_path)['state_dict']
-    new_dict = OrderedDict()
-    for k, v in state_dict.items():
-        new_dict[k[6:]] = v
-
+    state_dict = load_pretrained_dict(ckpt_path)
     model = MobileNetV2_unet()
-    model.load_state_dict(new_dict)
+    model.load_state_dict(state_dict)
     return model
 
 

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from logging import Logger, getLogger
+from pathlib import Path
 from typing import Optional, Tuple, Protocol, Sequence, Mapping, Generic, TypeVar, TypedDict, Dict, Any, \
     Union
 
@@ -162,7 +163,7 @@ class PLBaseModule(pl.LightningModule, ABC, Generic[T]):
         return getLogger('lightning')
 
 
-def load_pretrained_dict(ckpt_path: str) -> OrderedDict:
+def load_pretrained_dict(ckpt_path: Union[str, Path]) -> OrderedDict:
     ckpt = torch.load(ckpt_path)
 
     if any(k.startswith('ema_model') for k in ckpt['state_dict'].keys()):
