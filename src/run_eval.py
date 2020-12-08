@@ -51,15 +51,13 @@ if __name__ == '__main__':
     with torch.no_grad():
         inputs, labels = next(iter(loader))
 
-        inputs = inputs.to(device)
-        labels = labels.to(device)
-        outputs = model(inputs)
+        outputs = model(inputs.to(device)).cpu()
 
         inputs = inputs.squeeze()
-        inputs = (inputs * 255).cpu().numpy().transpose((1, 2, 0)).astype(np.uint8)
+        labels = labels.squeeze()
+        outputs = outputs.squeeze()
 
-        labels = labels.squeeze().cpu()
-        outputs = outputs.squeeze().cpu()
+        inputs = (inputs * 255).numpy().transpose((1, 2, 0)).astype(np.uint8)
 
         plt.subplot(131)
         plt.imshow(inputs)
