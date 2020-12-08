@@ -1,23 +1,21 @@
 from functools import cached_property, partial
 from logging import getLogger, FileHandler
 from multiprocessing import cpu_count
-from os import cpu_count
 from pathlib import Path
 from time import time
-from typing import Optional, Union, Sequence, Dict
+from typing import Dict, Optional, Union, Sequence
 
 import albumentations as A
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
-from sklearn.model_selection import KFold
 from torch.optim import Adam
 from torch.optim.lr_scheduler import LambdaLR, OneCycleLR
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import Dataset, DataLoader
 from torch_optimizer import RAdam
 
-from mobile_seg.dataset import get_img_files, MaskDataset
+from mobile_seg.dataset import load_df, MaskDataset, split_df
 from mobile_seg.loss import dice_loss
 from mobile_seg.modules.net import MobileNetV2_unet
 from mobile_seg.params import ModuleParams, Params, DataParams
@@ -37,17 +35,11 @@ class DataModule(pl.LightningDataModule):
         self.val_dataset: Optional[Dataset] = None
 
     def setup(self, stage: Optional[str] = None):
-        img_files = get_img_files()
-
-        folds = KFold(
-            n_splits=self.params.n_splits,
-            random_state=self.params.seed,
-            shuffle=True,
-        )
-        train_idx, val_idx = list(folds.split(img_files))[self.params.fold]
+        df = load_df()
+        df_train, df_val = split_df(df, self.params)
 
         self.train_dataset = MaskDataset(
-            img_files[train_idx],
+            df_train,
             transform=A.Compose([
                 A.RandomResizedCrop(
                     self.params.img_size,
@@ -68,7 +60,7 @@ class DataModule(pl.LightningDataModule):
             ]),
         )
         self.val_dataset = MaskDataset(
-            img_files[val_idx],
+            df_val,
             transform=A.Compose([
                 A.Resize(
                     self.params.img_size,

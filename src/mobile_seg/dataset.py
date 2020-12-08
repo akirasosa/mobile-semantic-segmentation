@@ -2,43 +2,59 @@ from pathlib import Path
 
 import albumentations as A
 import numpy as np
+import pandas as pd
 from PIL import Image
+from sklearn.model_selection import KFold
 from torch.utils.data import Dataset
 
-from mobile_seg.const import DATA_LFW_DIR
+from mobile_seg.const import DATA_LFW_DIR, CACHE_DIR
+from mobile_seg.params import DataParams
 from mylib.albumentations.augmentations.transforms import MyCoarseDropout
+from mylib.pandas.cache import pd_cache
 
 
 def _mask_to_img(mask_file: Path) -> Path:
     return DATA_LFW_DIR / f'raw/images/{mask_file.stem}.jpg'
 
 
-def _img_to_mask(img_file: Path) -> Path:
-    return DATA_LFW_DIR / f'raw/masks/{img_file.stem}.ppm'
+@pd_cache(CACHE_DIR, ext='.pqt')
+def load_df():
+    mask_files = list(sorted(DATA_LFW_DIR.glob('**/*.ppm')))
+    img_files = list(map(_mask_to_img, mask_files))
+    return pd.DataFrame({
+        'img_path': map(str, img_files),
+        'mask_path': map(str, mask_files),
+    })
 
 
-def get_img_files() -> np.ndarray:
-    mask_files = sorted(DATA_LFW_DIR.glob('**/*.ppm'))
-    return np.array(list(map(_mask_to_img, mask_files)))
+def split_df(df: pd.DataFrame, params: DataParams):
+    folds = KFold(
+        n_splits=params.n_splits,
+        random_state=params.seed,
+        shuffle=True,
+    )
+    train_idx, val_idx = list(folds.split(df))[params.fold]
+    return df.iloc[train_idx], df.iloc[val_idx]
 
 
 class MaskDataset(Dataset):
     def __init__(
             self,
-            img_files: np.ndarray,
+            df: pd.DataFrame,
             transform: A.Compose,
             mask_axis: int = 0,  # 0 is hair
     ):
-        self.img_files = img_files
-        self.mask_files = [_img_to_mask(f) for f in img_files]
+        self.df = df
         self.transform = transform
         self.mask_axis = mask_axis
 
     def __getitem__(self, idx):
-        img = Image.open(self.img_files[idx])
+        row = self.df.iloc[idx]
+
+        img = Image.open(row['img_path'])
         img = np.array(img)
 
-        mask = Image.open(self.mask_files[idx])
+        mask = Image.open(row['mask_path'])
         mask = np.array(mask)
         mask = mask[:, :, self.mask_axis]
 
@@ -50,7 +66,7 @@ class MaskDataset(Dataset):
         return img / 255., mask / 255.
 
     def __len__(self):
-        return len(self.img_files)
+        return len(self.df)
 
 
 # %%
@@ -59,10 +75,10 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     # %%
-    img_files = get_img_files()
+    df = load_df()
     img_size = 224
     dataset = MaskDataset(
-        img_files,
+        df,
         transform=A.Compose([
             A.RandomResizedCrop(
                 img_size,

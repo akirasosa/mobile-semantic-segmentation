@@ -7,3 +7,5 @@ EXP_DIR = Path('../experiments')
 
 TMP_DIR = Path('../tmp')
 TMP_DIR.mkdir(exist_ok=True)
+
+CACHE_DIR = Path('../cache')
