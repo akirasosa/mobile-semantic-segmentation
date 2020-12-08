@@ -52,7 +52,7 @@ If you use 224 x 224 as input size, pre-trained weight of MobileNetV2 is availab
 
 ```
 cd src
-python run_train.py params/001.yaml
+python run_train.py params/002.yaml
 ```
 
 Dice coefficient is used as a loss function.
