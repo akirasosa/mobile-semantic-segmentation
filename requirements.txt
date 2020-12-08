@@ -39,6 +39,7 @@ packaging==20.7
 pandas==1.1.4
 Pillow==8.0.1
 protobuf==3.14.0
+pyarrow==2.0.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pyparsing==2.4.7
