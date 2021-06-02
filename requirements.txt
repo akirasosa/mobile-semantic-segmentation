@@ -69,5 +69,5 @@ torchvision==0.8.1+cu110
 tqdm==4.54.0
 typing==3.7.4.3
 typing-extensions==3.7.4.3
-urllib3==1.26.2
+urllib3==1.26.5
 Werkzeug==1.0.1
