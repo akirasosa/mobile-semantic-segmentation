@@ -25,7 +25,7 @@ Markdown==3.3.3
 matplotlib==3.3.3
 mpmath==1.1.0
 networkx==2.5
-numpy==1.19.4
+numpy==1.22.0
 oauthlib==3.1.0
 omegaconf==2.0.5
 onnx==1.8.0
