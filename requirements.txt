@@ -3,7 +3,7 @@ albumentations==0.5.2
 attr==0.3.1
 attrs==20.3.0
 cachetools==4.1.1
-certifi==2020.11.8
+certifi==2022.12.7
 chardet==3.0.4
 click==7.1.2
 coremltools==4.0
